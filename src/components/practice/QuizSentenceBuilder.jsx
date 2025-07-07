@@ -9,7 +9,6 @@ export default function QuizSentenceBuilder({ sentence, onNext }) {
     setSelectedWords([]);
   }, [sentence]);
 
-  // Перемешивание массива
   function shuffleArray(array) {
     return array
       .map((value) => ({ value, sort: Math.random() }))
@@ -17,40 +16,23 @@ export default function QuizSentenceBuilder({ sentence, onNext }) {
       .map(({ value }) => value);
   }
 
-  // Перетаскиваем слово из списка доступных слов
-  const handleDragStart = (e, word, source) => {
-    e.dataTransfer.setData("text/plain", word);
-    e.dataTransfer.setData("source", source);
+  // Добавляем слово в собранное предложение
+  const handleSelect = (word) => {
+    setSelectedWords([...selectedWords, word]);
+    setShuffledWords(shuffledWords.filter((w) => w !== word));
   };
 
-  // Разрешаем сброс
-  const handleDragOver = (e) => e.preventDefault();
-
-  // Добавляем слово в предложение при сбросе
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const word = e.dataTransfer.getData("text/plain");
-    const source = e.dataTransfer.getData("source");
-
-    if (source === "shuffled") {
-      setSelectedWords([...selectedWords, word]);
-      setShuffledWords(shuffledWords.filter((w) => w !== word));
-    } else if (source === "selected") {
-      // Позволим перетаскивать слова внутри выбранных для перестановки
-    }
-  };
-
-  // Удаляем слово из предложения и возвращаем в список
-  const removeWord = (word) => {
-    setSelectedWords(
-      selectedWords.filter((w, i) => i !== selectedWords.indexOf(word))
-    );
+  // Удаляем слово из собранного предложения
+  const handleRemove = (word, index) => {
+    const updated = [...selectedWords];
+    updated.splice(index, 1);
+    setSelectedWords(updated);
     setShuffledWords([...shuffledWords, word]);
   };
 
-  // Проверка результата
   const handleSubmit = () => {
-    if (selectedWords.join(" ") === sentence.text) {
+    const correct = selectedWords.join(" ") === sentence.text;
+    if (correct) {
       alert("✅ Правильно!");
       onNext();
     } else {
@@ -58,21 +40,9 @@ export default function QuizSentenceBuilder({ sentence, onNext }) {
     }
   };
 
-  // Перемещаем слово внутри выбранных (drag and drop reorder)
-  const handleDropOnSelected = (e, index) => {
-    e.preventDefault();
-    const draggedWord = e.dataTransfer.getData("text/plain");
-    const source = e.dataTransfer.getData("source");
-
-    if (source === "selected") {
-      const draggedIndex = selectedWords.indexOf(draggedWord);
-      if (draggedIndex === -1) return;
-
-      let newSelected = [...selectedWords];
-      newSelected.splice(draggedIndex, 1); // удаляем с прошлой позиции
-      newSelected.splice(index, 0, draggedWord); // вставляем на новую
-      setSelectedWords(newSelected);
-    }
+  const reset = () => {
+    setShuffledWords(shuffleArray(sentence.words));
+    setSelectedWords([]);
   };
 
   return (
@@ -87,46 +57,39 @@ export default function QuizSentenceBuilder({ sentence, onNext }) {
         <p className="italic text-gray-500 mb-4">🛈 Перевод недоступен</p>
       )}
 
-      {/* Слова для выбора */}
-      <div className="flex flex-wrap gap-2 mb-4 border p-3 rounded min-h-[50px]">
-        {shuffledWords.length === 0 && <i>Все слова выбраны</i>}
+      {/* Выбор слов */}
+      <div className="flex flex-wrap gap-2 mb-4 border p-3 rounded min-h-[50px] bg-gray-100">
+        {shuffledWords.length === 0 && (
+          <i className="text-sm text-gray-400">Все слова выбраны</i>
+        )}
         {shuffledWords.map((word, i) => (
-          <div
+          <button
             key={i}
-            draggable
-            onDragStart={(e) => handleDragStart(e, word, "shuffled")}
-            className="cursor-move bg-gray-200 px-3 py-1 rounded select-none"
+            onClick={() => handleSelect(word)}
+            className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300 transition"
           >
             {word}
-          </div>
+          </button>
         ))}
       </div>
 
-      {/* Собранное предложение (дроп зона) */}
-      <div
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        className="flex flex-wrap gap-2 min-h-[50px] border p-3 rounded bg-gray-50"
-      >
+      {/* Собранное предложение */}
+      <div className="flex flex-wrap gap-2 min-h-[50px] border p-3 rounded bg-blue-50">
         {selectedWords.length === 0 && (
-          <i>Перетащите сюда слова, чтобы составить предложение</i>
+          <i className="text-sm text-gray-400">
+            Нажимайте на слова выше, чтобы составить предложение
+          </i>
         )}
-
-        {selectedWords.map((word, i) => (
+        {selectedWords.map((word, index) => (
           <div
-            key={i}
-            draggable
-            onDragStart={(e) => handleDragStart(e, word, "selected")}
-            onDrop={(e) => handleDropOnSelected(e, i)}
-            onDragOver={handleDragOver}
-            className="cursor-move bg-blue-300 px-3 py-1 rounded select-none relative"
+            key={index}
+            className="bg-blue-300 px-3 py-1 rounded relative text-white"
           >
             {word}
             <button
-              onClick={() => removeWord(word)}
-              className="absolute top-0 right-0 text-xs font-bold text-red-700 px-1"
-              type="button"
-              aria-label="Удалить слово"
+              onClick={() => handleRemove(word, index)}
+              className="ml-2 text-sm text-red-200 hover:text-white"
+              aria-label="Удалить"
             >
               ×
             </button>
@@ -134,19 +97,17 @@ export default function QuizSentenceBuilder({ sentence, onNext }) {
         ))}
       </div>
 
+      {/* Кнопки */}
       <div className="flex space-x-2 mt-4">
         <button
-          onClick={() => {
-            setSelectedWords([]);
-            setShuffledWords(shuffleArray(sentence.words));
-          }}
-          className="bg-yellow-400 px-4 py-2 rounded"
+          onClick={reset}
+          className="bg-yellow-400 hover:bg-yellow-500 px-4 py-2 rounded transition"
         >
           Сбросить
         </button>
         <button
           onClick={handleSubmit}
-          className="bg-green-600 text-white px-4 py-2 rounded"
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition"
         >
           Проверить
         </button>
