@@ -7,6 +7,7 @@ import VideoInput from "../addLesson/VideoInput";
 import LessonWords from "../addLesson/LessonWords";
 import Exercises from "../addLesson/Exercises";
 import NotesInput from "../addLesson/NotesInput";
+import LessonSentences from "../addLesson/LessonSentences";
 
 export default function EditLesson() {
   const { id } = useParams();
@@ -18,6 +19,7 @@ export default function EditLesson() {
   const [words, setWords] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [notes, setNotes] = useState("");
+  const [sentences, setSentences] = useState([]);
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -33,6 +35,7 @@ export default function EditLesson() {
 
           setExercises(data.exercises || []);
           setNotes(data.notes || "");
+          setSentences(data.sentences || []);
         } else {
           alert("Урок не найден");
           navigate("/");
@@ -56,17 +59,19 @@ export default function EditLesson() {
       words,
       exercises,
       notes,
+      sentences,
     };
-
     try {
       const docRef = doc(db, "lessons", id);
       await updateDoc(docRef, updatedLesson);
-      alert("Урок успешно обновлён!");
+      // alert("Урок успешно обновлён!");  // <- закомментировано
+      console.log("Урок успешно обновлён!");
       navigate("/");
     } catch (err) {
       console.error("Ошибка при обновлении урока:", err);
       alert("Ошибка при обновлении урока");
     }
+    
   };
 
   return (
@@ -100,9 +105,9 @@ export default function EditLesson() {
       </div>
 
       <LessonWords words={words} setWords={setWords} />
+      <LessonSentences sentences={sentences} setSentences={setSentences} />
       <Exercises exercises={exercises} setExercises={setExercises} />
       <NotesInput notes={notes} setNotes={setNotes} />
-
       <div className="text-center">
         <button
           type="submit"

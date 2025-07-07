@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
-import WordList from "../components/word/wordList";
+import { db } from "../../../firebase";
+import WordList from "../../word/wordList";
 import { useDispatch, useSelector } from "react-redux";
-import { setWords } from "../store/features/words/wordsSlice";
+import { setWords } from "../../../store/features/words/wordsSlice";
+import LessonStats from "./LessonStats";
+import ExerciseList from "./ExerciseList";
 
 export default function LessonDetailsPage() {
   const { id } = useParams();
@@ -25,9 +27,6 @@ export default function LessonDetailsPage() {
         if (docSnap.exists()) {
           const data = docSnap.data();
 
-          console.log("data.words:", data.words); // отладка
-
-          // Проверяем, что data.words - массив, иначе пустой массив
           const wordsWithStatus = Array.isArray(data.words)
             ? data.words.map((w) => ({
                 ...w,
@@ -41,6 +40,7 @@ export default function LessonDetailsPage() {
           setLesson({
             id: docSnap.id,
             ...data,
+            words: wordsWithStatus,
           });
         } else {
           setLesson(null);
@@ -55,6 +55,13 @@ export default function LessonDetailsPage() {
 
     fetchLesson();
   }, [id, dispatch]);
+
+  const handleSpeak = (text) => {
+    if (!window.speechSynthesis) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "de-DE";
+    window.speechSynthesis.speak(utterance);
+  };
 
   if (loading) return <p className="text-center mt-4">Загрузка...</p>;
   if (!lesson)
@@ -83,32 +90,32 @@ export default function LessonDetailsPage() {
         </a>
       )}
 
-      {/* Используем слова из Redux */}
       {words.length > 0 && (
-        <div className="mb-6">
-          <h2 className="font-semibold mb-2 text-lg">🧠 Новые слова</h2>
-          <WordList words={words} lessonId={lesson.id} />
-        </div>
+        <>
+          <LessonStats words={words} />
+
+          <div className="mb-6">
+            <h2 className="font-semibold mb-2 text-lg">🧠 Новые слова</h2>
+            <WordList
+              words={words}
+              lessonId={lesson.id}
+              onSpeak={handleSpeak}
+            />
+          </div>
+        </>
       )}
 
       {lesson.exercises?.length > 0 && (
-        <div className="mb-6">
-          <h2 className="font-semibold mb-2 text-lg">📌 Упражнения</h2>
-          <ul className="list-decimal list-inside text-gray-800 space-y-2">
-            {lesson.exercises.map((ex, i) => (
-              <li key={i}>
-                {typeof ex === "string" ? (
-                  ex
-                ) : (
-                  <>
-                    <strong>❓ Вопрос:</strong> {ex.title}
-                    <br />
-                    <strong>✅ Ответ:</strong> {ex.questions}
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
+        <ExerciseList exercises={lesson.exercises} />
+      )}
+      {lesson.words?.length > 0 && (
+        <div className="text-center mt-6">
+          <a
+            href={`/practice/${lesson.id}`}
+            className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          >
+            🧪 Пройти практику
+          </a>
         </div>
       )}
 

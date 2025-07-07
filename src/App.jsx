@@ -5,7 +5,8 @@ import EditLesson from "./components/EditLesson/EditLesson";
 import HomePage from "./pages/HomePage";
 import WordPage from "./pages/WordPage";
 import AddLessonPage from "./pages/AddLessonPage";
-import LessonDetailsPage from "./pages/LessonDetailsPage";
+import LessonDetailsPage from "./components/lessonList/LessonDetails/LessonDetailsPage";
+import PracticeLessonPage from "./pages/PracticePage";
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/word" element={<WordPage />} />
           <Route path="/lesson/:id" element={<LessonDetailsPage />} />
           <Route path="/edit/:id" element={<EditLesson />} />
+          <Route path="/practice/:id" element={<PracticeLessonPage />} />
         </Routes>
       </main>
     </>

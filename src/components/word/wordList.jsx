@@ -1,20 +1,59 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import WordCard from "./WordCard";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { db } from "../../firebase";
 
-export default function WordList({ words = [] }) {
+export default function WordList({ words = [], lessonId }) {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [wordList, setWordList] = useState(
-    words.map((w) => ({ ...w, status: w.status || "learn" }))
-  );
+  const [wordList, setWordList] = useState([]);
 
-  const handleStatusChange = (index, newStatus) => {
+  // Синхронизация при изменении пропса words
+  useEffect(() => {
+    setWordList(
+      words.map((w) => ({
+        ...w,
+        status: w.status || "learn",
+      }))
+    );
+  }, [words]);
+
+  // Обновление статуса слова в Firebase в массиве words внутри урока
+  const handleStatusChange = async (index, newStatus) => {
     const updatedWords = [...wordList];
     updatedWords[index].status = newStatus;
     setWordList(updatedWords);
+
+    if (!lessonId) {
+      console.error("lessonId отсутствует, не могу обновить статус");
+      return;
+    }
+
+    try {
+      const lessonRef = doc(db, "lessons", lessonId);
+      const lessonSnap = await getDoc(lessonRef);
+      if (!lessonSnap.exists()) {
+        console.error("Урок не найден для обновления статуса слова");
+        return;
+      }
+
+      const lessonData = lessonSnap.data();
+      const wordsArray = lessonData.words || [];
+
+      // Обновляем статус нужного слова по индексу
+      const newWordsArray = wordsArray.map((word, i) =>
+        i === index ? { ...word, status: newStatus } : word
+      );
+
+      // Сохраняем обратно в Firestore
+      await updateDoc(lessonRef, {
+        words: newWordsArray,
+      });
+    } catch (error) {
+      console.error("Ошибка при сохранении статуса:", error);
+    }
   };
 
-  // Фильтрация по статусу и поиску
   const filtered = wordList.filter((w) => {
     const matchesStatus = filter === "all" ? true : w.status === filter;
     const matchesSearch =
@@ -33,7 +72,7 @@ export default function WordList({ words = [] }) {
         className="w-full p-2 border rounded mb-4"
       />
 
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4">
         {["all", "learn", "learned", "repeat"].map((f) => (
           <button
             key={f}
@@ -56,7 +95,7 @@ export default function WordList({ words = [] }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {filtered.map((word, index) => (
           <WordCard
-            key={index}
+            key={word.id || index}
             word={word}
             index={index}
             onStatusChange={(newStatus) => handleStatusChange(index, newStatus)}

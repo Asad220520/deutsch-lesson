@@ -3,12 +3,13 @@ import React from "react";
 export default function WordCard({ word, index, onStatusChange }) {
   const status = word.status;
 
-  // Функция озвучки слова через Web Speech API
   const speakWord = () => {
-    if (!window.speechSynthesis)
-      return alert("Ваш браузер не поддерживает озвучку");
+    if (!window.speechSynthesis) {
+      alert("Ваш браузер не поддерживает озвучку");
+      return;
+    }
     const utterance = new SpeechSynthesisUtterance(word.de);
-    utterance.lang = "de-DE"; // немецкий язык
+    utterance.lang = "de-DE";
     window.speechSynthesis.speak(utterance);
   };
 
