@@ -1,5 +1,5 @@
 import React from "react";
-import ExerciseBlock from "./ ExerciseBlock";
+import ExerciseBlock from "./ExerciseBlock";
 
 export default function Exercises({ exercises, setExercises }) {
   const addExercise = () => {
