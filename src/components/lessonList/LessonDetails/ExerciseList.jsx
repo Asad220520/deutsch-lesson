@@ -17,7 +17,24 @@ export default function ExerciseList({ exercises }) {
             ) : (
               <>
                 <p className="font-medium">❓ Вопрос: {ex.title}</p>
-                <p className="text-green-700">✅ Ответ: {ex.questions}</p>
+
+                {/* Проверка на правильность данных */}
+                {Array.isArray(ex.questions) && ex.questions.length > 0 ? (
+                  ex.questions.map((q, index) => {
+                    // Пропускаем вопросы с неполными данными
+                    if (!q.sentence || !q.answer) {
+                      return null; // Просто пропускаем этот вопрос
+                    }
+                    return (
+                      <div key={index}>
+                        <p>💬 Предложение: {q.sentence}</p>
+                        <p className="text-green-700">✅ Ответ: {q.answer}</p>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-yellow-500">⚠️ Нет данных для вопросов.</p>
+                )}
               </>
             )}
           </div>
